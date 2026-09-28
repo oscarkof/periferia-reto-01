@@ -239,6 +239,12 @@ body {
   color: var(--error);
 }
 
+/* El texto del turno vive en su propio nodo, junto a las tarjetas de herramienta:
+   así repintarlo no las borra (CA4). Vacío no debe dejar un hueco. */
+.turno__texto:empty {
+  display: none;
+}
+
 /* Tarjetas de llamada a herramienta: CA4 pide que se vean en el chat. */
 .llamadas {
   display: flex;

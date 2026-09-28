@@ -61,6 +61,21 @@ function avisar(texto) {
   }, 8000)
 }
 
+/**
+ * Quita el aviso de la pantalla ahora, sin esperar los 8 s.
+ * Se llama al empezar un turno: el aviso de un problema anterior no debe quedarse
+ * encima del turno nuevo. Esta función se llamaba desde `enviar` sin estar
+ * definida, y eso rompía el turno con «limpiarAviso is not defined».
+ */
+function limpiarAviso() {
+  if (temporizadorAviso !== null) {
+    clearTimeout(temporizadorAviso)
+    temporizadorAviso = null
+  }
+  dom.aviso.hidden = true
+  dom.aviso.textContent = ""
+}
+
 /** Escribe texto en un nodo, sin interpretar HTML. */
 function escribir(nodo, texto) {
   nodo.textContent = texto
@@ -114,12 +129,19 @@ function agregarTurno(quien, texto) {
 
   const cuerpo = document.createElement("div")
   cuerpo.className = "turno__cuerpo"
-  if (typeof texto === "string") cuerpo.textContent = texto
+
+  // El texto va en su propio nodo a propósito: el turno se repinta cada vez que
+  // llega un trozo de respuesta, y si el texto se pintara sobre el cuerpo entero
+  // borraría las tarjetas de herramienta que ya estaban en ese turno (CA4).
+  const cuerpoTexto = document.createElement("div")
+  cuerpoTexto.className = "turno__texto"
+  if (typeof texto === "string") cuerpoTexto.textContent = texto
+  cuerpo.append(cuerpoTexto)
 
   turno.append(titulo, cuerpo)
   dom.conversacion.append(turno)
   turno.scrollIntoView({ block: "end", behavior: "smooth" })
-  return { turno, cuerpo }
+  return { turno, cuerpo, texto: cuerpoTexto }
 }
 
 /** Texto base del indicador y su contador de segundos. */
@@ -368,7 +390,7 @@ function procesarEvento(evento, actual) {
 
   if (evento.tipo === "texto") {
     actual.fragmentos.push(evento.texto)
-    pintarTexto(actual.cuerpo, actual.fragmentos.join(""))
+    pintarTexto(actual.texto, actual.fragmentos.join(""))
     return
   }
 
@@ -380,13 +402,13 @@ function procesarEvento(evento, actual) {
   }
 
   if (evento.tipo === "error") {
-    escribir(actual.cuerpo, evento.texto)
+    escribir(actual.texto, evento.texto)
     actual.fila.classList.add("turno--error")
     return
   }
 
   if (evento.tipo === "fin") {
-    pintarTexto(actual.cuerpo, actual.fragmentos.join("") || evento.texto)
+    pintarTexto(actual.texto, actual.fragmentos.join("") || evento.texto)
     if (evento.needsConfirmation === true) {
       mostrarConfirmacion("El agente terminó el turno esperando tu confirmación.")
     }
@@ -440,7 +462,13 @@ async function enviar(mensaje) {
 
   agregarTurno("usuario", texto)
   const creado = agregarTurno("agente")
-  const actual = { fila: creado.turno, cuerpo: creado.cuerpo, llamadas: [], fragmentos: [] }
+  const actual = {
+    fila: creado.turno,
+    cuerpo: creado.cuerpo,
+    texto: creado.texto,
+    llamadas: [],
+    fragmentos: [],
+  }
   mostrarTrabajo()
 
   try {
@@ -448,7 +476,7 @@ async function enviar(mensaje) {
   } catch (error) {
     const detalle = error instanceof Error ? error.message : String(error)
     actual.fila.classList.add("turno--error")
-    escribir(actual.cuerpo, `No pude completar el turno: ${detalle}`)
+    escribir(actual.texto, `No pude completar el turno: ${detalle}`)
     avisar(`No pude completar el turno: ${detalle}`)
   } finally {
     ocultarTrabajo()
@@ -552,7 +580,7 @@ window.addEventListener("unhandledrejection", (evento) => {
 
 /* ── Arranque ─────────────────────────────────────────────────────────────── */
 
-console.info("[front] app.js cargado · v3 · manejadores listos (submit y clics delegados)")
+console.info("[front] app.js cargado · v4 · manejadores listos (submit y clics delegados)")
 
 pintarSugerencias()
 pintarSesion(0)

@@ -188,13 +188,13 @@ tail -f reto-01/solucion/out/ec-corp-andina/log.jsonl
 curl -s http://127.0.0.1:3000/api/sessions/<session-id>
 
 # 4) La consola del navegador (F12 → Consola). Debe decir:
-#    [front] app.js cargado · v2
+#    [front] app.js cargado · v4
 #    Si no aparece, el navegador está usando una versión vieja en caché: recarga con Cmd+Shift+R.
 ```
 
-En pantalla, la página lleva la marca **"interfaz v2"** en el pie: si la ves, estás probando el
-front actual. Y cualquier error de JavaScript se muestra ahora en el aviso rojo de la pantalla, no
-solo en la consola.
+En pantalla, la página lleva la marca **"interfaz v4"** en el pie: si la ves, estás probando el
+front actual. Durante un turno la consola apunta también `[front] enviando…`, y cualquier error de
+JavaScript se muestra en el aviso rojo de la pantalla, no solo en la consola.
 
 ---
 
