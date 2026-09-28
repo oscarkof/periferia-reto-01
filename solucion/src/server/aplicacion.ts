@@ -9,8 +9,6 @@
  * El backend no contiene reglas de negocio: compone el ciclo del agente, que a
  * su vez usa las herramientas. Cambiar una regla del proceso no toca este archivo.
  */
-import fs from "node:fs"
-import path from "node:path"
 import Fastify, { type FastifyInstance } from "fastify"
 import fastifyStatic from "@fastify/static"
 import { idValido, listarSesiones } from "../agent/sesion.ts"
@@ -19,6 +17,7 @@ import type { AdaptadorLlm } from "../llm/adapter.ts"
 import { NOMBRES } from "../tools/proveedor.ts"
 import { registrarChat } from "./chat.ts"
 import { leerDeOut } from "./estaticos.ts"
+import { raizFront } from "./front.ts"
 import { crearMemoria, obtenerSesion, type MemoriaSesiones } from "./memoria.ts"
 
 /** Dependencias ya resueltas que necesita la aplicación. */
@@ -45,9 +44,9 @@ export async function crearAplicacion(deps: Dependencias): Promise<FastifyInstan
   })
   app.options("/*", async (_peticion, reply) => reply.code(204).send())
 
-  // El front construido se sirve solo si existe: la API funciona sin él.
-  const raizWeb = path.join(directorio, "web", "dist")
-  if (fs.existsSync(raizWeb)) {
+  // El front se sirve solo si existe: la API funciona sin él (PRD §6.1).
+  const raizWeb = raizFront(directorio)
+  if (raizWeb !== null) {
     await app.register(fastifyStatic, { root: raizWeb, prefix: "/", wildcard: false })
   }
 

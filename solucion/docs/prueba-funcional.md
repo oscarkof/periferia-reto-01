@@ -41,6 +41,10 @@ cd reto-01/solucion
 LLM_PROVIDER=mock npm run dev
 ```
 
+**Abre `http://127.0.0.1:3000` en el navegador**: ahí está la interfaz de chat (historial, tarjetas de
+cada llamada a herramienta, indicador de trabajo y banda de confirmación). Los `curl` de abajo sirven
+para ver el mismo flujo sin navegador. Los detalles del front están en `docs/front-web.md`.
+
 En otra pestaña:
 
 ```bash
@@ -96,7 +100,8 @@ cp .env.example .env             # opcional, para ajustar puerto o modelo
 npm run dev
 ```
 
-En otra pestaña, **turno 1**: procesar un caso.
+Con el navegador en `http://127.0.0.1:3000` la prueba es la misma, pero se ve cada llamada a
+herramienta mientras ocurre. En otra pestaña de la terminal, **turno 1**: procesar un caso.
 
 ```bash
 curl -s -X POST 'http://127.0.0.1:3000/api/chat?json=1' \
