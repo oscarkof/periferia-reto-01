@@ -2,7 +2,7 @@ import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { z } from "zod"
 import { definirHerramienta, type Mensaje } from "../src/llm/adapter.ts"
-import { NUM_CTX_OLLAMA, crearAdaptadorOllama } from "../src/llm/ollama.ts"
+import { NUM_CTX_OLLAMA, crearAdaptadorOllama, leerThink } from "../src/llm/ollama.ts"
 import { levantarOllamaFalso, type OllamaFalso } from "../test-utils/ollama-falso.ts"
 
 let falso: OllamaFalso
@@ -43,6 +43,42 @@ test("la petición pide una ventana de contexto mayor que la de Ollama por defec
   assert.equal(parametros["type"], "object")
   assert.deepEqual(parametros["required"], ["caso"])
   assert.equal(parametros["additionalProperties"], false, "el modelo no debe inventar argumentos")
+})
+
+test("`think` NO viaja salvo que se pida: los modelos que no razonan rechazan el campo", async () => {
+  const previo = process.env["OLLAMA_THINK"]
+  delete process.env["OLLAMA_THINK"]
+  try {
+    falso.programar([{ cuerpo: { message: { content: "ok" } } }])
+    await crearAdaptadorOllama({ base: falso.url }).enviar(MENSAJES, [HERRAMIENTA])
+
+    assert.equal("think" in (falso.peticiones.at(-1) ?? {}), false)
+  } finally {
+    if (previo !== undefined) process.env["OLLAMA_THINK"] = previo
+  }
+})
+
+test("OLLAMA_THINK se traduce a lo que espera la API", () => {
+  assert.equal(leerThink(undefined), undefined)
+  assert.equal(leerThink("   "), undefined)
+  assert.equal(leerThink("false"), false)
+  assert.equal(leerThink(" TRUE "), true)
+  assert.equal(leerThink("medium"), "medium")
+  assert.equal(leerThink("muchísimo"), undefined, "un valor no reconocido se ignora, no viaja")
+})
+
+test("con el razonamiento apagado por entorno, el campo sí viaja", async () => {
+  const previo = process.env["OLLAMA_THINK"]
+  process.env["OLLAMA_THINK"] = "false"
+  try {
+    falso.programar([{ cuerpo: { message: { content: "ok" } } }])
+    await crearAdaptadorOllama({ base: falso.url }).enviar(MENSAJES, [HERRAMIENTA])
+
+    assert.equal((falso.peticiones.at(-1) ?? {})["think"], false)
+  } finally {
+    if (previo === undefined) delete process.env["OLLAMA_THINK"]
+    else process.env["OLLAMA_THINK"] = previo
+  }
 })
 
 test("normaliza argumentos cuando Ollama los manda como OBJETO (hallazgo del smoke test)", async () => {

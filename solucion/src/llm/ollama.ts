@@ -39,6 +39,27 @@ export const MODELO_OLLAMA = "qwen3:4b-instruct"
  */
 export const NUM_CTX_OLLAMA = 8192
 
+/**
+ * Niveles de razonamiento que acepta Ollama en el campo `think`.
+ *
+ * Ollama expone `think` (booleano o nivel) para los modelos que razonan antes de
+ * responder. Se envía **solo si se pide** (`OLLAMA_THINK` u `opciones.think`):
+ * los modelos que no razonan rechazan el campo, así que por defecto no viaja. Un
+ * valor no reconocido se ignora en lugar de romper el arranque —coherente con
+ * que este adaptador nunca lanza.
+ */
+export const NIVELES_THINK = ["low", "medium", "high", "max"] as const
+
+/** Traduce `OLLAMA_THINK` a lo que espera la API, o `undefined` para no enviarlo. */
+export function leerThink(valor: string | undefined): boolean | string | undefined {
+  if (valor === undefined) return undefined
+  const texto = valor.trim().toLowerCase()
+  if (texto === "") return undefined
+  if (["true", "1", "sí", "si"].includes(texto)) return true
+  if (["false", "0", "no"].includes(texto)) return false
+  return (NIVELES_THINK as readonly string[]).includes(texto) ? texto : undefined
+}
+
 /** Ollama puede tardar en cargar el modelo la primera vez. */
 const TIMEOUT_DEFECTO_MS = 180_000
 
@@ -58,6 +79,8 @@ export interface OpcionesOllama {
   timeoutMs?: number
   /** Ventana de contexto; por defecto se usa `NUM_CTX_OLLAMA`. */
   numCtx?: number
+  /** Razonamiento previo (`think`); por defecto se lee `OLLAMA_THINK`. */
+  think?: boolean | string
 }
 
 /** Traduce un mensaje interno al formato de cable de Ollama. */
@@ -93,6 +116,7 @@ export function crearAdaptadorOllama(opciones: OpcionesOllama = {}): AdaptadorLl
   const modelo = opciones.modelo ?? process.env["OLLAMA_MODEL"] ?? MODELO_OLLAMA
   const timeoutDefecto = opciones.timeoutMs ?? TIMEOUT_DEFECTO_MS
   const numCtx = opciones.numCtx ?? Number(process.env["OLLAMA_NUM_CTX"] ?? NUM_CTX_OLLAMA)
+  const think = opciones.think ?? leerThink(process.env["OLLAMA_THINK"])
 
   return {
     proveedor: "ollama",
@@ -114,6 +138,7 @@ export function crearAdaptadorOllama(opciones: OpcionesOllama = {}): AdaptadorLl
             stream: false,
             messages: mensajes.map(aMensajeOllama),
             ...(herramientas.length > 0 ? { tools: herramientas.map(aHerramientaOllama) } : {}),
+            ...(think === undefined ? {} : { think }),
             options: { temperature: opciones.temperatura ?? 0, num_ctx: numCtx },
           }),
         })
