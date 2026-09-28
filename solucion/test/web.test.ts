@@ -122,6 +122,32 @@ test("el HTML carga el guion y los estilos, y el guion importa el parser", () =>
   assert.match(guion, /from "\.\/sse\.js"/)
 })
 
+test("el CSS neutraliza `hidden` aunque la clase fije su propio display", () => {
+  const html = fs.readFileSync(path.join(WEB, "index.html"), "utf8")
+  const css = fs.readFileSync(path.join(WEB, "estilos.css"), "utf8")
+
+  // Elementos que el HTML marca como ocultos y que el guion muestra cuando toca.
+  const ocultos = [...html.matchAll(/<[^>]+class="([^"]+)"[^>]*\bhidden\b/g)].map((coincidencia) => coincidencia[1] ?? "")
+  assert.ok(ocultos.length >= 2, `se esperaban elementos con \`hidden\` y se leyeron ${ocultos.length}`)
+
+  // Una regla del autor pesa más que `[hidden] { display: none }` del navegador,
+  // así que si una de estas clases fija display, la regla propia es obligatoria.
+  const conDisplayPropio = ocultos.flatMap((clase) => clase.split(/\s+/)).filter((clase) => {
+    const regla = new RegExp(`\\.${clase}\\s*\\{[^}]*display:`)
+    return regla.test(css)
+  })
+  assert.ok(
+    conDisplayPropio.length > 0,
+    `el test solo aporta si alguna clase fija display; revisa el HTML: ${ocultos.join(", ")}`,
+  )
+
+  assert.match(
+    css,
+    /\[hidden\]\s*\{[^}]*display:\s*none/,
+    "sin `[hidden] { display: none }` un elemento oculto con display propio se ve igual (la banda de confirmación aparecía desde el arranque)",
+  )
+})
+
 /* ── Parser del stream SSE ────────────────────────────────────────────────── */
 
 test("SSE · separa los bloques completos y conserva el resto incompleto", () => {

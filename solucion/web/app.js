@@ -126,10 +126,37 @@ function agregarTurno(quien, texto) {
   return { turno, cuerpo }
 }
 
-/** Muestra u oculta el indicador de trabajo. */
-function trabajando(activo, texto = "El agente está trabajando…") {
-  dom.pensandoTexto.textContent = texto
-  dom.pensando.hidden = !activo
+/** Texto base del indicador y su contador de segundos. */
+let contadorTrabajo = null
+let inicioTrabajo = 0
+
+/**
+ * Muestra el indicador de trabajo, con los segundos transcurridos.
+ * El contador no es decorativo: con el modelo local un turno tarda más de un
+ * minuto, y sin señal de avance la pantalla parece colgada.
+ */
+function mostrarTrabajo(texto = "El agente está trabajando…") {
+  dom.pensandoTexto.dataset["base"] = texto
+  dom.pensandoTexto.textContent = `${texto} · 0 s`
+
+  if (contadorTrabajo === null) {
+    inicioTrabajo = Date.now()
+    contadorTrabajo = setInterval(() => {
+      const segundos = Math.round((Date.now() - inicioTrabajo) / 1000)
+      dom.pensandoTexto.textContent = `${dom.pensandoTexto.dataset["base"] ?? ""} · ${segundos} s`
+    }, 1000)
+  }
+
+  dom.pensando.hidden = false
+}
+
+/** Oculta el indicador y detiene el contador. */
+function ocultarTrabajo() {
+  if (contadorTrabajo !== null) {
+    clearInterval(contadorTrabajo)
+    contadorTrabajo = null
+  }
+  dom.pensando.hidden = true
 }
 
 /** Identificador y turnos en el panel lateral. */
@@ -329,6 +356,7 @@ function procesarEvento(evento, actual) {
 
   if (evento.tipo === "llamada") {
     if (typeof evento.argumentos?.caso === "string") estado.caso = evento.argumentos.caso
+    mostrarTrabajo(`Ejecutando ${evento.nombre}…`)
     actual.llamadas.push({ nombre: evento.nombre, nodo: agregarLlamada(actual.cuerpo, evento) })
     return
   }
@@ -410,7 +438,7 @@ async function enviar(mensaje) {
   agregarTurno("usuario", texto)
   const creado = agregarTurno("agente")
   const actual = { fila: creado.turno, cuerpo: creado.cuerpo, llamadas: [], fragmentos: [] }
-  trabajando(true)
+  mostrarTrabajo()
 
   try {
     await consumirStream(texto, actual)
@@ -420,7 +448,7 @@ async function enviar(mensaje) {
     escribir(actual.cuerpo, `No pude completar el turno: ${detalle}`)
     avisar(`No pude completar el turno: ${detalle}`)
   } finally {
-    trabajando(false)
+    ocultarTrabajo()
     estado.ocupado = false
     await refrescarSesion()
     dom.entrada.focus()

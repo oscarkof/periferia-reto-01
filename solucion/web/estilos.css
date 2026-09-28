@@ -27,6 +27,17 @@
   box-sizing: border-box;
 }
 
+/*
+  El atributo `hidden` del HTML tiene que ganar SIEMPRE. Varias clases de aquí
+  fijan `display` (`.pensando`, `.confirmacion`, `.aviso`) y una regla del autor
+  pesa más que la del navegador, así que sin esto un elemento marcado como
+  oculto se veía igual: la banda de confirmación y el indicador de trabajo
+  aparecían desde el primer segundo, antes de conversar nada.
+*/
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: var(--fondo);
