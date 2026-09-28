@@ -6,7 +6,7 @@
   "description": "Agente conversacional de registro como proveedor · Reto 01 · Periferia IT Group",
   "license": "UNLICENSED",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.18"
   },
   "scripts": {
     "test": "node --test",

@@ -12,7 +12,7 @@ revisar el motor determinista y la API en dos minutos.
 
 ```bash
 cd reto-01/solucion
-npm test            # 99 pruebas, 0 fallos
+npm test            # 119 pruebas, 0 fallos
 npm run typecheck   # 0 errores
 node demo.ts        # los 4 casos, sin proveedor de lenguaje
 ```
@@ -33,6 +33,10 @@ node demo.ts --envio
 
 El adaptador `mock` repite un guion de cuatro pasos, así que permite recorrer la aplicación completa
 sin descargar nada y sin claves. Revisa `src/llm/mock.ts`: **no es un agente**, es un guion.
+
+Si prefieres no instalar nada, el mismo arranque está en Docker: `cd reto-01 && docker compose up
+--build` (ver `README.md` §1). Comprobado con un turno real contra el modelo del host: 66 s, tres
+llamadas a herramientas y `needsConfirmation: true`.
 
 En una pestaña:
 
