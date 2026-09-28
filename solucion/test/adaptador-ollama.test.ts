@@ -2,7 +2,7 @@ import { test, before, after } from "node:test"
 import assert from "node:assert/strict"
 import { z } from "zod"
 import { definirHerramienta, type Mensaje } from "../src/llm/adapter.ts"
-import { NUM_CTX_OLLAMA, crearAdaptadorOllama, leerThink } from "../src/llm/ollama.ts"
+import { MODELO_OLLAMA, NUM_CTX_OLLAMA, crearAdaptadorOllama, leerThink } from "../src/llm/ollama.ts"
 import { levantarOllamaFalso, type OllamaFalso } from "../test-utils/ollama-falso.ts"
 
 let falso: OllamaFalso
@@ -28,14 +28,18 @@ const MENSAJES: Mensaje[] = [
 ]
 
 test("la petición pide una ventana de contexto mayor que la de Ollama por defecto", async () => {
+  // Hermética: si el entorno define OLLAMA_MODEL, el default no es observable.
+  const previo = process.env["OLLAMA_MODEL"]
+  delete process.env["OLLAMA_MODEL"]
   falso.programar([{ cuerpo: { message: { content: "listo" } } }])
   await crearAdaptadorOllama({ base: falso.url }).enviar(MENSAJES, [HERRAMIENTA])
+  if (previo !== undefined) process.env["OLLAMA_MODEL"] = previo
 
   const peticion = falso.peticiones.at(-1) ?? {}
   const opciones = peticion["options"] as Record<string, unknown>
   assert.equal(opciones["num_ctx"], NUM_CTX_OLLAMA, "el valor por defecto de Ollama (4096) no alcanza")
   assert.equal(peticion["stream"], false)
-  assert.equal(peticion["model"], "qwen3:4b-instruct")
+  assert.equal(peticion["model"], MODELO_OLLAMA, "sin OLLAMA_MODEL se usa el modelo medido")
 
   const herramientas = peticion["tools"] as { function: { parameters: Record<string, unknown> } }[]
   assert.equal(herramientas.length, 1)

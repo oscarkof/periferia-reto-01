@@ -24,8 +24,18 @@ import type { Resultado } from "../core/tipos.ts"
 /** URL por defecto del servidor local de Ollama. */
 export const URL_OLLAMA = "http://localhost:11434"
 
-/** Modelo por defecto: el validado en el smoke test (2.5 GB, con tool calling). */
-export const MODELO_OLLAMA = "qwen3:4b-instruct"
+/**
+ * Modelo por defecto.
+ *
+ * `granite4.1:8b` (5.3 GB) es el medido en las dos pruebas de extremo a extremo
+ * del ciclo: paquete listo para firma y paquete bloqueado. IBM lo publica con
+ * español declarado, tool calling y salida JSON; ver `docs/modelo-llm.md`.
+ *
+ * El más liviano que funciona es `qwen3:4b-instruct` (2.5 GB), pero **no** pasa
+ * el turno de confirmación: se niega a simular el envío aunque el usuario lo
+ * haya confirmado. Con 16 GB de RAM o más, usa el 8B.
+ */
+export const MODELO_OLLAMA = "granite4.1:8b"
 
 /**
  * Ventana de contexto que se pide a Ollama.
