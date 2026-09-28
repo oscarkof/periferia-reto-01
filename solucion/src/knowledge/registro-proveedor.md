@@ -42,6 +42,12 @@ Cada caso es una carpeta en `fixtures/reto-01/casos/<caso>/`:
 **Regla de oro:** el único origen válido de un valor es una de estas fuentes. Si un campo pedido no
 existe aquí, el campo es `faltante`; jamás se completa con un valor plausible.
 
+**Quién escribe el valor:** `proveedor_generar_formulario` y `proveedor_armar_paquete` **recalculan** el
+mapeo con el motor determinista antes de escribir. Si el agente les pasa un `mapeo`, se compara con el
+suyo, la discrepancia se informa en `advertencias` y se escribe el del motor: un valor alterado no
+llega al formulario nunca. Es a propósito, y por eso el argumento se acepta en vez de rechazarse: así
+el desvío queda auditado en lugar de invisible.
+
 ## 5. Estados de un campo
 
 | Estado | Cuándo | Qué significa para el humano |
