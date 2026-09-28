@@ -263,7 +263,7 @@ scripts, pruebas y automatizaciones.
 acción pendiente).
 **Descartado:** guardar el estado en la memoria del proceso.
 **Por qué:** recargar el navegador no pierde nada, el front puede releer el estado real
-(`GET /api/sessions/:id`) y en la defensa se puede abrir el JSON y ver la acción pendiente exacta.
+(`GET /api/sessions/:id`) y el JSON se puede abrir para ver la acción pendiente exacta.
 **Costo aceptado:** no escala horizontal sin cambiar el almacenamiento; para 8-12 casos al mes es de
 sobra. `out/` está ignorado por git.
 
