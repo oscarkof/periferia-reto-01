@@ -42,12 +42,18 @@ Cada caso es una carpeta en `fixtures/reto-01/casos/<caso>/`:
 **Regla de oro:** el único origen válido de un valor es una de estas fuentes. Si un campo pedido no
 existe aquí, el campo es `faltante`; jamás se completa con un valor plausible.
 
+**Quién escribe el valor:** `proveedor_generar_formulario` y `proveedor_armar_paquete` **recalculan** el
+mapeo con el motor determinista antes de escribir. Si el agente les pasa un `mapeo`, se compara con el
+suyo, la discrepancia se informa en `advertencias` y se escribe el del motor: un valor alterado no
+llega al formulario nunca. Es a propósito, y por eso el argumento se acepta en vez de rechazarse: así
+el desvío queda auditado en lugar de invisible.
+
 ## 5. Estados de un campo
 
 | Estado | Cuándo | Qué significa para el humano |
 |---|---|---|
 | `lleno` | El glosario mapea la etiqueta **y** el maestro tiene el dato | Listo para escribir en el formulario |
-| `requiere_confirmacion` | Regla de país (RN1), etiqueta genérica, o confianza < 0.8 | **Tiene valor**, pero una persona debe validarlo antes de firmar |
+| `requiere_confirmacion` | Regla de país (RN1), etiqueta genérica, o confianza < 0.8 | **Tiene valor**; una persona debe revisarlo. **No bloquea** `listo_para_firma` (ver RN3) |
 | `faltante` | Sin mapeo o sin dato en el maestro | Hay que conseguirlo. No bloquea la firma, pero queda en el checklist |
 
 El campo guarda siempre `ruta_dato` (de dónde salió) y `confianza` (1.0 exacto, 0.7 aproximado).
@@ -92,13 +98,18 @@ Bloquea `listo_para_firma`:
 - un soporte exigido **vencido** (`vigencia_hasta` anterior a la fecha de ejecución);
 - un soporte exigido **ausente** del repositorio.
 
-**No** lo bloquea un campo `faltante` del formulario: se reporta en el checklist y la analista
-decide. La firma es una decisión humana.
+**No** lo bloquea ningún campo del formulario, ni `faltante` ni `requiere_confirmacion`: se reportan
+y la analista decide. **El veredicto lo deciden solo los soportes.** Una descripción que mezcle campos
+con bloqueos es incorrecta: diría que el paquete no se puede firmar cuando sí se puede.
 
 ### RN4 · Nada se ejecuta sin confirmación explícita
 
 El agente no envía, no firma y no carga a un portal sin confirmación del usuario **en el turno
 inmediatamente anterior**. En este reto, "enviar" solo escribe `out/<caso>/ENVIO-SIMULADO.md`.
+
+La simulación de envío **no está sujeta a `listo_para_firma`**: si la analista confirma, se simula
+aunque el paquete esté bloqueado, porque la constancia es justamente lo que documenta el bloqueo.
+Lo que nunca ocurre es firmar ni enviar de verdad.
 
 ### RN5 · Trazabilidad
 

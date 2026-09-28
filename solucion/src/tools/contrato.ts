@@ -29,6 +29,12 @@ export interface Herramienta<Esquema extends z.ZodTypeAny> {
 }
 
 /**
+ * Vista genérica de una herramienta: es la que usa el backend para ejecutar
+ * cualquiera de ellas de forma uniforme, sin conocer su esquema concreto.
+ */
+export type HerramientaGenerica = Herramienta<z.ZodTypeAny>
+
+/**
  * Nombre visible para el modelo, derivado de archivo y export (PRD §6.2).
  * Devuelve un tipo literal (`"proveedor_leer_solicitud"`) para que el nombre no
  * pueda escribirse mal en el registro de herramientas.

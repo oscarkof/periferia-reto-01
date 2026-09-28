@@ -19,7 +19,7 @@
 import { z } from "zod"
 import { mapearCampos } from "../core/mapeo.ts"
 import { evaluarSoportes } from "../core/soportes.ts"
-import { nombreHerramienta, type Herramienta } from "./contrato.ts"
+import { nombreHerramienta, type Herramienta, type HerramientaGenerica } from "./contrato.ts"
 import { auditarMapeo, cargarTodo, conRegistro, escritorDe, esquemaMapeo } from "./contexto.ts"
 import { generarFormulario, nombreArchivoFormulario } from "./formulario.ts"
 import { armarPaquete } from "./paquete.ts"
@@ -200,6 +200,11 @@ export const armar_paquete: Herramienta<typeof argsCaso> = {
             formulario_soportado: formulario.data.soportado,
             nota_formulario: formulario.data.nota,
             resumen_mapeo: resumenMapeo(mapeo),
+            // Guía explícita para el modelo: la simulación de envío no depende del
+            // veredicto de firma, y el envío real exige confirmación del usuario.
+            siguiente_paso: paquete.data.listo_para_firma
+              ? "el paquete está listo para firma: si el usuario confirma el envío, llama a proveedor_simular_envio"
+              : "el paquete está bloqueado para firma: dilo con el motivo. Si el usuario confirma el envío igualmente, llama a proveedor_simular_envio de todas formas: la constancia documenta el bloqueo y NO se firma ni se envía nada",
           },
         }
       },
@@ -309,9 +314,6 @@ export const NOMBRES: NombreHerramienta[] = [
   nombreHerramienta(ARCHIVO, "armar_paquete"),
   nombreHerramienta(ARCHIVO, "simular_envio"),
 ]
-
-/** Vista genérica que usa el backend para ejecutar cualquier herramienta (F3). */
-export type HerramientaGenerica = Herramienta<z.ZodTypeAny>
 
 /**
  * Reinterpreta una herramienta concreta como la vista genérica.
