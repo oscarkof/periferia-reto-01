@@ -12,7 +12,7 @@ revisar el motor determinista y la API en dos minutos.
 
 ```bash
 cd reto-01/solucion
-npm test            # 99 pruebas, 0 fallos
+npm test            # 119 pruebas, 0 fallos
 npm run typecheck   # 0 errores
 node demo.ts        # los 4 casos, sin proveedor de lenguaje
 ```
@@ -34,12 +34,20 @@ node demo.ts --envio
 El adaptador `mock` repite un guion de cuatro pasos, así que permite recorrer la aplicación completa
 sin descargar nada y sin claves. Revisa `src/llm/mock.ts`: **no es un agente**, es un guion.
 
+Si prefieres no instalar nada, el mismo arranque está en Docker: `cd reto-01 && docker compose up
+--build` (ver `README.md` §1). Comprobado con un turno real contra el modelo del host: 66 s, tres
+llamadas a herramientas y `needsConfirmation: true`.
+
 En una pestaña:
 
 ```bash
 cd reto-01/solucion
 LLM_PROVIDER=mock npm run dev
 ```
+
+**Abre `http://127.0.0.1:3000` en el navegador**: ahí está la interfaz de chat (historial, tarjetas de
+cada llamada a herramienta, indicador de trabajo y banda de confirmación). Los `curl` de abajo sirven
+para ver el mismo flujo sin navegador. Los detalles del front están en `docs/front-web.md`.
 
 En otra pestaña:
 
@@ -96,7 +104,8 @@ cp .env.example .env             # opcional, para ajustar puerto o modelo
 npm run dev
 ```
 
-En otra pestaña, **turno 1**: procesar un caso.
+Con el navegador en `http://127.0.0.1:3000` la prueba es la misma, pero se ve cada llamada a
+herramienta mientras ocurre. En otra pestaña de la terminal, **turno 1**: procesar un caso.
 
 ```bash
 curl -s -X POST 'http://127.0.0.1:3000/api/chat?json=1' \
@@ -163,7 +172,37 @@ ser `No está listo para firma` **solo** por el soporte ausente
 
 ---
 
-## 4 · Qué mirar si algo no cuadra
+## 4 · Ver qué está pasando en tiempo real
+
+Cuando algo "no hace nada", hacen falta estos cuatro sitios. El primero es nuevo: antes el
+servidor arrancaba sin registrar peticiones y por eso una interfaz muda no dejaba rastro.
+
+```bash
+# 1) La terminal donde corre `npm run dev`: cada petición, su resultado y su duración.
+#    Ejemplo real de un turno completo:
+#    [12:00:03] POST /api/chat · sesión prueba-sse · "Procesa el caso co-industrias-delta…"
+#    [12:00:20] POST /api/chat · sesión prueba-sse · stream cerrado en 17.2 s · 3 llamadas
+#    Si al pulsar Enviar no aparece ninguna línea aquí, el navegador no está enviando nada.
+
+# 2) Las herramientas, en vivo. Es el registro de RN5 (CA4):
+tail -f reto-01/solucion/out/log.jsonl             # los cuatro casos
+tail -f reto-01/solucion/out/ec-corp-andina/log.jsonl
+
+# 3) El estado de la sesión: historial, turnos y acción pendiente.
+curl -s http://127.0.0.1:3000/api/sessions/<session-id>
+
+# 4) La consola del navegador (F12 → Consola). Debe decir:
+#    [front] app.js cargado · v4
+#    Si no aparece, el navegador está usando una versión vieja en caché: recarga con Cmd+Shift+R.
+```
+
+En pantalla, la página lleva la marca **"interfaz v4"** en el pie: si la ves, estás probando el
+front actual. Durante un turno la consola apunta también `[front] enviando…`, y cualquier error de
+JavaScript se muestra en el aviso rojo de la pantalla, no solo en la consola.
+
+---
+
+## 5 · Qué mirar si algo no cuadra
 
 | Síntoma | Causa y solución |
 |---|---|

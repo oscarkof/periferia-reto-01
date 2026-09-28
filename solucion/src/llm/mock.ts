@@ -93,20 +93,17 @@ export function crearAdaptadorMock(guion: PasoMock[] = []): AdaptadorMock {
 
 /**
  * Guion que reproduce el prompt de ejemplo del PRD §11 sin modelo: leer la
- * solicitud, mapear, generar el formulario, armar el paquete y cerrar pidiendo
- * confirmación antes de simular el envío.
+ * solicitud, armar el paquete y cerrar pidiendo confirmación.
+ *
+ * No incluye `proveedor_mapear_campos` a propósito: el guion no conoce los
+ * campos de la plantilla —eso lo sabe el modelo tras leer la solicitud— y
+ * llamarlo con una lista de campos inventada solo produce un error de validación
+ * en la demo. `armar_paquete` ya recalcula el mapeo y genera el formulario, así
+ * que el recorrido sigue siendo el mismo.
  */
 export function guionDemo(caso: string): PasoMock[] {
   return [
     { llamadas: [{ nombre: "proveedor_leer_solicitud", argumentos: { caso } }] },
-    {
-      llamadas: [
-        {
-          nombre: "proveedor_mapear_campos",
-          argumentos: { caso, campos: [] },
-        },
-      ],
-    },
     { llamadas: [{ nombre: "proveedor_armar_paquete", argumentos: { caso } }] },
     {
       texto:

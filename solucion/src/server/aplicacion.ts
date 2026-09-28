@@ -9,8 +9,6 @@
  * El backend no contiene reglas de negocio: compone el ciclo del agente, que a
  * su vez usa las herramientas. Cambiar una regla del proceso no toca este archivo.
  */
-import fs from "node:fs"
-import path from "node:path"
 import Fastify, { type FastifyInstance } from "fastify"
 import fastifyStatic from "@fastify/static"
 import { idValido, listarSesiones } from "../agent/sesion.ts"
@@ -19,6 +17,7 @@ import type { AdaptadorLlm } from "../llm/adapter.ts"
 import { NOMBRES } from "../tools/proveedor.ts"
 import { registrarChat } from "./chat.ts"
 import { leerDeOut } from "./estaticos.ts"
+import { raizFront } from "./front.ts"
 import { crearMemoria, obtenerSesion, type MemoriaSesiones } from "./memoria.ts"
 
 /** Dependencias ya resueltas que necesita la aplicación. */
@@ -45,11 +44,32 @@ export async function crearAplicacion(deps: Dependencias): Promise<FastifyInstan
   })
   app.options("/*", async (_peticion, reply) => reply.code(204).send())
 
-  // El front construido se sirve solo si existe: la API funciona sin él.
-  const raizWeb = path.join(directorio, "web", "dist")
-  if (fs.existsSync(raizWeb)) {
+  // El front se sirve solo si existe: la API funciona sin él (PRD §6.1).
+  const raizWeb = raizFront(directorio)
+  if (raizWeb !== null) {
     await app.register(fastifyStatic, { root: raizWeb, prefix: "/", wildcard: false })
   }
+
+  // Registro de peticiones: sin esto, cuando el front "no hace nada" no hay
+  // forma de saber desde la terminal si la petición llegó siquiera.
+  const comienzos = new WeakMap<object, number>()
+  app.addHook("onRequest", async (peticion) => {
+    comienzos.set(peticion, Date.now())
+  })
+  app.addHook("onResponse", async (peticion, respuesta) => {
+    const inicio = comienzos.get(peticion) ?? Date.now()
+    const segundos = ((Date.now() - inicio) / 1000).toFixed(1)
+    console.log(
+      `[${new Date().toTimeString().slice(0, 8)}] ${peticion.method} ${peticion.url} → ${respuesta.statusCode} (${segundos} s)`,
+    )
+  })
+  app.setErrorHandler((error: unknown, peticion, respuesta) => {
+    const detalle = error instanceof Error ? error.message : String(error)
+    const declarado = typeof error === "object" && error !== null && "statusCode" in error ? error.statusCode : undefined
+    const codigo = typeof declarado === "number" ? declarado : 500
+    console.error(`[${new Date().toTimeString().slice(0, 8)}] error en ${peticion.method} ${peticion.url}: ${detalle}`)
+    void respuesta.code(codigo).send({ ok: false, error: detalle })
+  })
 
   app.get("/api/health", async () => {
     const casos = listarCasos()
