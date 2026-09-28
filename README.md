@@ -5,7 +5,29 @@
 > El agente prepara el formulario y el paquete de soportes. **Firmar y enviar es humano.**
 
 Este README es el documento maestro del entregable: cómo levantarlo, **con qué está hecho y por qué**,
-cómo se eligió el modelo, **qué hace cada archivo del repositorio** y una guía para la sustentación.
+cómo se eligió el modelo, **qué hace cada archivo del repositorio** y qué queda fuera del alcance.
+
+## Qué hace este agente
+
+Automatiza el **registro como proveedor** ante clientes de Colombia, Ecuador, Perú, Panamá y Honduras
+(8–12 solicitudes al mes): a partir de una solicitud recibida por correo, **identifica los campos que pide
+el cliente y los llena con los valores del repositorio maestro**, genera el formulario en el formato
+solicitado (plantilla Excel, PDF o los valores para un portal) y arma el **paquete de soportes listo para
+la firma del representante legal**.
+
+**El agente nunca firma ni envía:** deja todo preparado y pide confirmación humana. Y **no puede inventar
+un dato**: los valores solo pueden salir del repositorio maestro por código determinista, y el veredicto de
+«listo para firma» también lo decide código. El modelo conversa y pide herramientas; el resultado es el
+mismo con cualquier modelo o sin ninguno.
+
+## Cómo leer esta entrega
+
+| Documento | Qué cuenta |
+|---|---|
+| **`README.md`** (este) | Cómo levantarlo, con qué está hecho y por qué, el modelo elegido con sus mediciones, y **qué hace cada archivo** |
+| [`SOLUCION.md`](SOLUCION.md) | El planteamiento completo: arquitectura, decisiones con la alternativa descartada, cobertura de las historias de usuario y riesgos |
+| [`solucion/docs/`](solucion/docs/) | El detalle por tema: modelo, front, prueba funcional y puesta en marcha del repositorio |
+| [`solucion/demo.ts`](solucion/demo.ts) | Los cuatro casos del repositorio ejecutados sin modelo y sin claves |
 
 | Quiero… | Sección |
 |---|---|
@@ -13,9 +35,11 @@ cómo se eligió el modelo, **qué hace cada archivo del repositorio** y una gu�
 | Saber el stack y por qué cada pieza | [2. Stack](#2-stack-con-qué-está-hecho-y-por-qué) |
 | Entender la elección del modelo, con números | [3. El modelo](#3-el-modelo-elección-mediciones-y-costo) |
 | Saber qué hace cada archivo | [4. Estructura](#4-estructura-del-repositorio-archivo-por-archivo) |
+| Ver las herramientas sin modelo | [5. `demo.ts`](#5-demots-las-herramientas-sin-modelo) |
 | Correr las pruebas | [6. Pruebas](#6-pruebas-automáticas) |
-| Preparar la defensa | [9. Guía para la sustentación](#9-guía-para-la-sustentación) |
-| El planteamiento completo y las decisiones | [`SOLUCION.md`](SOLUCION.md) |
+| Configurar el entorno | [7. Variables de entorno](#7-variables-de-entorno) |
+| Probar la aplicación en línea | [8. Link de prueba](#8-link-de-prueba) |
+| Saber qué quedó fuera del alcance | [9. Limitaciones](#9-qué-queda-fuera-limitaciones-declaradas) |
 
 ---
 
@@ -82,7 +106,7 @@ cd reto-01/solucion && LLM_PROVIDER=mock npm run dev
 | Modelo | **Ollama + `granite4.1:8b`** | — | Local, sin claves, con *tool calling*. Detalle en §3 y en `solucion/docs/modelo-llm.md` |
 | Empaquetado | **Docker + Compose** | 29.6.2 / v5.3.1 | `docker compose up --build` levanta todo sin instalar Node. Probado de punta a punta |
 | Pruebas | **`node:test`** | incluido en Node | Sin *test runner* externo: `node --test` corre también los `.ts` |
-| Diagramas | HTML autocontenido en `docs/diagramas/` | — | Visual de arquitectura para la sustentación, sin depender de una herramienta externa |
+| Diagramas | HTML autocontenido en `docs/diagramas/` | — | Material visual de la arquitectura (front → API → ciclo → herramientas → archivos), sin depender de una herramienta externa |
 
 ### Dependencias directas: cinco para producir, tres para construir
 
@@ -257,7 +281,7 @@ de firma. Es la razón de que el agente no pueda inventar un dato.
 | `glosario.ts` | Traduce la etiqueta del cliente a la clave del maestro, indexada por etiqueta normalizada | Es donde se resuelve «NIT» vs «RUC» vs «Tax ID» |
 | `normalizar.ts` | Quita tildes, mayúsculas y signos; calcula similitud entre textos | Hace que la búsqueda de sinónimos no dependa de cómo escribió el cliente |
 | `mapeo.ts` | El motor de mapeo: llenos, faltantes y `requiere_confirmacion` | Es el corazón de HU-2 y es **100 % determinista**: el modelo no produce valores |
-| `pais.ts` | Reglas por país (RN1): CO → NIT, EC/PE/PA → RUC, HN → RTN, y qué se marca por confirmar | La regla de negocio que más se pregunta en la sustentación |
+| `pais.ts` | Reglas por país (RN1): CO → NIT, EC/PE/PA → RUC, HN → RTN, y qué se marca por confirmar | La regla con más variantes del reto: cada país identifica a la empresa de otra forma y pide soportes distintos |
 | `soportes.ts` | Evalúa cada soporte exigido: presente/ausente/vencido, con la fecha de ejecución | Alimenta el veredicto de firma (RN3) y es reproducible con `FECHA_EJECUCION` |
 | `escritor.ts` | Escribe siempre dentro de `out/`, con `limpiar()` para el arranque determinista | Confina la escritura y hace que dos ejecuciones den lo mismo (PRD §8) |
 | `log.ts` | Registra cada herramienta en `out/<caso>/log.jsonl` y en `out/log.jsonl` | Es la traza de RN5 y lo que el front muestra como tarjetas (CA4) |
@@ -329,7 +353,7 @@ de firma. Es la razón de que el agente no pueda inventar un dato.
 | `docs/front-web.md` | Decisiones del front, contrato con el backend y los **tres bugs** que encontraron las pruebas | Deja escrito por qué el front es estático y qué se aprendió de cada fallo |
 | `docs/prueba-funcional.md` | Guía de prueba en cuatro niveles: pruebas, API con guion, API con modelo real y qué mirar si algo falla | Para que el evaluador lo compruebe por su cuenta, con los comandos exactos |
 | `docs/repo-setup.md` | Cómo se organizó el repositorio: un repo por reto, convención de commits y checklist de seguridad previo a cada push | Explica la forma del historial de Git y cómo se verifica que no se filtren secretos |
-| `docs/diagramas/arquitectura-reto01.html` | Diagrama de arquitectura autocontenido (front → API → ciclo → herramientas → archivos) | Material visual para la sustentación, sin depender de herramientas externas |
+| `docs/diagramas/arquitectura-reto01.html` | Diagrama de arquitectura autocontenido (front → API → ciclo → herramientas → archivos) | Material visual de la arquitectura, sin depender de herramientas externas |
 
 ### 4.10 `test/`: 119 pruebas automáticas
 
@@ -428,95 +452,15 @@ LLM_PROVIDER=openai OPENAI_API_KEY=... npm run dev
 
 ## 8. Link de prueba
 
-> **Pendiente de publicar.** Se completa en esta misma fase con el túnel estable o el despliegue, y
-> se deja activo durante la defensa. Mientras tanto, la aplicación se levanta en local con el comando
-> de §1 (el PRD §9.3 admite esa modalidad con −10).
+> **Pendiente de publicar.** Se completa con el túnel estable o el despliegue, y se deja activo mientras la
+> aplicación esté en evaluación. Mientras tanto, se levanta en local con el comando de §1 (el PRD §9.3
+> admite esa modalidad con −10).
 
 **Clave de acceso:** no aplica; el link es público y no expone ninguna clave de modelo.
 
 ---
 
-## 9. Guía para la sustentación
-
-### 9.1 El discurso de 60 segundos
-
-> «Es un agente conversacional que automatiza el registro de proveedores: recibe la solicitud por
-> correo, llena el formulario desde el repositorio maestro, lo genera en el formato que pidió el
-> cliente y arma el paquete de soportes listo para firma. Lo importante de cómo está hecho: **el modelo
-> conversa y pide herramientas, pero los valores solo pueden salir del repositorio maestro y el
-> veredicto de firma lo decide código determinista**, así que no puede inventar un dato. Nunca firma ni
-> envía: deja todo listo y pide confirmación explícita. Corre con un modelo local, sin claves ni coste
-> por caso, se levanta con un comando y tiene 119 pruebas que incluyen **ejecutar el front de verdad**,
-> no solo mirar que el HTML exista.»
-
-### 9.2 El recorrido de 5 minutos (en este orden)
-
-| # | Qué hacer | Qué decir mientras |
-|---|---|---|
-| 1 | `cd reto-01/solucion && node demo.ts` | «Esto es el motor determinista, sin modelo. Cuatro casos, y es reproducible: limpia `out/` al empezar» |
-| 2 | `LLM_PROVIDER=mock npm run dev` y abrir `http://127.0.0.1:3000` | «La app completa sin descargar nada: envío el mensaje del PRD §11 y aparecen las tarjetas de cada herramienta y la banda de confirmación» |
-| 3 | Con el modelo real (o el contenedor de Docker) | «Con `granite4.1:8b` el primer turno tarda ~70 s; por eso el indicador cuenta segundos y la respuesta llega por stream» |
-| 4 | `npm test` | «119 pruebas en verde, sin modelo y sin red. Incluyen el front ejecutándose contra el backend» |
-| 5 | Abrir `out/co-industrias-delta/` | «El `formulario.xlsx` con los campos por confirmar en ámbar, el `paquete/` con checklist y borrador de correo, `log.jsonl` con la traza de cada herramienta y `sessions/*.json` con la acción pendiente» |
-| 6 | `git log --oneline` | «El historial cuenta la historia por fases: motor, herramientas, ciclo, front, despliegue» |
-| 7 | *(opcional)* `cd reto-01 && docker compose up --build` | «Sin instalar Node: un comando» |
-
-### 9.3 Las decisiones que debes poder defender
-
-| Decisión | En una frase | Alternativa descartada |
-|---|---|---|
-| El dictamen es determinista | Los valores y el veredicto salen de código, no del modelo | Dejar que el modelo redacte el formulario y declare «listo para firma» |
-| Front estático sin build | El PRD pide un comando y esta pantalla tiene poco estado | React o Svelte con bundler |
-| Los fixtures se usan en su sitio | No se copian: dos copias divergen sin que nadie lo note | Duplicarlos dentro de `solucion/` |
-| Streaming SSE (+ `?json=1`) | Con 70 s por turno, sin stream la pantalla parece colgada | Responder solo el JSON completo |
-| Sesiones en disco | Recargar no pierde nada y el estado se puede inspeccionar | Solo memoria del proceso |
-| `mock` de primera clase | Demo y pruebas sin claves, sin red y sin 5 GB | Depender siempre del modelo real |
-
-### 9.4 Preguntas probables, con la respuesta corta
-
-| Pregunta | Respuesta |
-|---|---|
-| ¿Cómo evitas que el modelo invente un dato? | Los valores solo salen de `mapeo.ts` + `maestro.ts`; el mapeo que devuelve el modelo **se audita dentro de la herramienta** y hay pruebas anti-alucinación que fallan si altera un campo (CA2) |
-| ¿Cómo garantizas que no envíe sin permiso? | No depende del prompt: `paso.ts` fuerza `confirmado=false` y `confirmacion.ts` exige un «sí» **en el turno anterior**, atado a ese caso (RN4) |
-| ¿Por qué Ollama y no GPT? | Coste 0, sin claves, cabe en 16 GB y el *tool calling* está verificado. Cambiar a OpenAI es una variable, y `openai.ts` ya existe para demostrarlo |
-| ¿Cuánto cuesta por caso? | Local: 0. Con proveedor de pago: ≈ **0,005 USD** por caso (2 turnos ≈ 29 000 tokens medidos), con topes de 200 000 tokens por sesión |
-| ¿Por qué el front no usa un framework? | El PRD §8 pide **un comando** y esta pantalla tiene poco estado; sin bundler no hay build. A cambio, las pruebas **ejecutan** el front contra el backend |
-| ¿Por qué tarda tanto un turno? | Es un modelo local de 8B (~70 s el primer turno). Por eso hay stream SSE y un contador de segundos visible: para que se vea que sigue vivo |
-| ¿Qué pasa si el caso no existe o el archivo está mal? | Errores tipados `{ ok: false, error }` con mensaje legible, nunca una traza; la sesión sigue viva y el caso siguiente se procesa (HU-5 · CA5) |
-| ¿Y si el cliente cambia su plantilla? | Hoy el mapeo falla de forma explícita («campo faltante») en vez de inventar; en producción iría un sello/hash que avise y detenga (está en §10 de `SOLUCION.md`) |
-| ¿Por qué hay tantos archivos? | Es la separación que pide el PRD §6.5: comportamiento (`agent/prompt.md`), conocimiento (`src/knowledge/`), ejecución (`src/tools/`) y dictamen (`src/core/`). Cada uno está explicado en §4 |
-| ¿Cómo sé que no se filtra la clave del modelo? | Solo se lee de `process.env` (`llm/fabrica.ts`), `/api/health` no la devuelve, no se registra en logs, `.env` está ignorado y hay checklist de seguridad en `docs/repo-setup.md` §8 |
-| ¿Cómo sé que el front no está roto si no hay navegador en la suite? | Hay un DOM mínimo en `test-utils/front.ts` que **carga `app.js` y recorre un turno completo**; es la prueba que cazó dos bugs reales (`limpiarAviso` y las tarjetas borradas). Lo que no cubre es CSS/pintado, y está declarado |
-| ¿Funciona sin conexión a internet? | Sí: `LLM_PROVIDER=mock` (o el guion) y las pruebas no tocan la red. El modelo local tampoco la necesita tras la descarga |
-
-### 9.5 Números para saber de memoria
-
-| Dato | Valor |
-|---|---|
-| Pruebas automáticas | **119** (más `typecheck` sin errores y **cero `any`**) |
-| Casos del repositorio | **4** (uno por país/formato; 2 quedan listos para firma) |
-| Herramientas del contrato | **5** (`leer_solicitud`, `mapear_campos`, `generar_formulario`, `armar_paquete`, `simular_envio`) |
-| Topes | **25** iteraciones por turno · **200 000** tokens por sesión |
-| Contexto del prompt + esquemas | **4 179** tokens (por eso `num_ctx: 8192`) |
-| Tiempos medidos | 70 s (procesar) · 26 s (confirmar) · 66 s en Docker |
-| Coste estimado | **0,005 USD/caso** con proveedor de pago · **0** en local |
-| Modelo | `granite4.1:8b` (Ollama, 5,3 GB, Apache 2.0) |
-
-### 9.6 Si te piden «enséñame el código»
-
-| Quieren ver… | Abre… |
-|---|---|
-| El ciclo del agente y sus topes | `src/agent/loop.ts` + `test/bucle.test.ts` |
-| Las reglas que el modelo no puede saltarse | `src/agent/paso.ts` y `src/agent/confirmacion.ts` |
-| El motor determinista | `src/core/mapeo.ts`, `src/core/pais.ts`, `src/core/soportes.ts` |
-| El contrato de herramientas | `src/tools/contrato.ts` + `test/contrato.test.ts` |
-| El stream que ve el front | `src/server/chat.ts` + `web/sse.js` |
-| El front | `web/app.js` (y `test/front-navegador.test.ts` para cómo se prueba) |
-| El empaquetado | `solucion/Dockerfile` + `docker-compose.yml` |
-
----
-
-## 10. Qué queda fuera (limitaciones declaradas)
+## 9. Qué queda fuera (limitaciones declaradas)
 
 1. **El link público está pendiente de publicar** (§8); el PRD §9.3 acepta probarlo en local con −10.
 2. **Los portales web no se automatizan**: el PRD lo pide así. Se generan los valores para copiar, y el

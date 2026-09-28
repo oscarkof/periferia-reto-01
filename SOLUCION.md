@@ -263,7 +263,7 @@ scripts, pruebas y automatizaciones.
 acción pendiente).
 **Descartado:** guardar el estado en la memoria del proceso.
 **Por qué:** recargar el navegador no pierde nada, el front puede releer el estado real
-(`GET /api/sessions/:id`) y en la defensa se puede abrir el JSON y ver la acción pendiente exacta.
+(`GET /api/sessions/:id`) y el JSON se puede abrir para ver la acción pendiente exacta.
 **Costo aceptado:** no escala horizontal sin cambiar el almacenamiento; para 8-12 casos al mes es de
 sobra. `out/` está ignorado por git.
 
@@ -385,8 +385,15 @@ suite que no lanza el front no prueba el front. El modelo real (`granite4.1:8b`)
 hallazgos: la ventana de contexto, los argumentos como objeto y el ruido del razonamiento están
 documentados en `docs/modelo-llm.md` con sus mediciones.
 
-> _Pendiente de revisión del candidato: completar la lista de asistentes usados en la sesión y qué
-> propuestas se descartaron fuera de las ya documentadas aquí._
+**Declaración final del uso de IA.** El único asistente usado para construir el entregable fue **Cline**
+(extensión de VS Code), y su papel está acotado en lo de arriba: propuso el código, la documentación y las
+pruebas, que yo dirigí, revisé y acepté o descarté fase por fase, sin pasar a la siguiente hasta tener
+`npm test` y `npm run typecheck` en verde.
+
+En **tiempo de ejecución** el entregable no llama a ningún servicio de IA de terceros: el modelo del agente
+es local (`granite4.1:8b` en Ollama), así que no envía datos del proceso a ninguna API y no necesita la
+clave de nadie. Si se decidiera usar un proveedor de pago, la clave viviría solo en la variable de entorno
+del backend (§4) y el cambio sería una variable, no un rediseño.
 
 ---
 
