@@ -100,6 +100,10 @@ decide. La firma es una decisión humana.
 El agente no envía, no firma y no carga a un portal sin confirmación del usuario **en el turno
 inmediatamente anterior**. En este reto, "enviar" solo escribe `out/<caso>/ENVIO-SIMULADO.md`.
 
+La simulación de envío **no está sujeta a `listo_para_firma`**: si la analista confirma, se simula
+aunque el paquete esté bloqueado, porque la constancia es justamente lo que documenta el bloqueo.
+Lo que nunca ocurre es firmar ni enviar de verdad.
+
 ### RN5 · Trazabilidad
 
 Toda ejecución de una herramienta deja registro en `out/<caso>/log.jsonl` y en `out/log.jsonl` con
