@@ -87,10 +87,24 @@ Qué mirar:
 
 1. La insignia de la cabecera con el proveedor y el modelo, sin claves.
 2. Las **tarjetas de herramienta** apareciendo una por una, con nombre, argumentos y resumen.
-3. El indicador "El agente está trabajando…" mientras el turno está en vuelo.
+3. El indicador de trabajo, que avanza: primero "El agente está trabajando… · 12 s" y luego
+   "Ejecutando proveedor_leer_solicitud… · 28 s". Con el modelo local la primera tarjeta tarda entre
+   25 y 30 segundos y el turno completo entre 60 y 70, así que el contador no es adorno: es la señal
+   de que la petición sigue viva.
 4. La **banda ámbar** al cerrar el turno, porque armar el paquete deja el envío pendiente.
 5. El botón "Sí, confirmo": desaparece la banda, la tarjeta de `proveedor_simular_envio` sale en
    verde y aparece `ENVIO-SIMULADO.md` en el panel de archivos (descargable).
+
+### Un bug real que dejó este front, y su prueba
+
+La primera versión marcaba `hidden` en `#pensando` y `#confirmacion`, pero el CSS fijaba
+`display: flex` en `.pensando` y `.confirmacion`. Como una regla del autor pesa más que la del
+navegador, **los dos se veían siempre**: la pantalla abría pidiendo una confirmación que nadie había
+pedido e indicando que el agente estaba trabajando sin haber enviado nada, lo que hacía pensar que
+estaba colgada. Se corrigió con `[hidden] { display: none !important }` y hay una prueba de regresión
+en `test/web.test.ts` que falla si alguien quita esa regla mientras alguna clase de un elemento
+oculto siga fijando `display`.
+
 
 ## 6. Lo que el front no hace, a propósito
 
