@@ -33,7 +33,9 @@ test("ciclo completo: el modelo pide herramientas y cierra con texto", async () 
 
   assert.equal(resultado.ok, true)
   assert.match(resultado.texto, /paquete está armado/)
-  assert.equal(resultado.needsConfirmation, false)
+  // Armar el paquete deja el envío como acción pendiente: el turno pide confirmación
+  // porque el ciclo lo sabe, no porque el modelo se acuerde de preguntar.
+  assert.equal(resultado.needsConfirmation, true)
 
   assert.equal(eventosDe("llamada", resultado.eventos).length, 2, "deben quedar registradas las llamadas (CA4)")
 

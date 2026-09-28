@@ -71,7 +71,9 @@ test("POST /api/chat responde con la estructura del PRD", async () => {
   assert.equal(cuerpo["ok"], true)
   assert.equal(cuerpo["sessionId"], "api-1")
   assert.match(String(cuerpo["reply"]), /Paquete armado/)
-  assert.equal(cuerpo["needsConfirmation"], false)
+  // El paquete quedó armado, así que el turno cierra con el envío pendiente: es el
+  // dato que el front usa para resaltar el estado de confirmación.
+  assert.equal(cuerpo["needsConfirmation"], true)
 
   const llamadas = cuerpo["toolCalls"] as { nombre?: string }[]
   assert.equal(llamadas.length, 2)

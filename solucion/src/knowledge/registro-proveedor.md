@@ -47,7 +47,7 @@ existe aquí, el campo es `faltante`; jamás se completa con un valor plausible.
 | Estado | Cuándo | Qué significa para el humano |
 |---|---|---|
 | `lleno` | El glosario mapea la etiqueta **y** el maestro tiene el dato | Listo para escribir en el formulario |
-| `requiere_confirmacion` | Regla de país (RN1), etiqueta genérica, o confianza < 0.8 | **Tiene valor**, pero una persona debe validarlo antes de firmar |
+| `requiere_confirmacion` | Regla de país (RN1), etiqueta genérica, o confianza < 0.8 | **Tiene valor**; una persona debe revisarlo. **No bloquea** `listo_para_firma` (ver RN3) |
 | `faltante` | Sin mapeo o sin dato en el maestro | Hay que conseguirlo. No bloquea la firma, pero queda en el checklist |
 
 El campo guarda siempre `ruta_dato` (de dónde salió) y `confianza` (1.0 exacto, 0.7 aproximado).
@@ -92,8 +92,9 @@ Bloquea `listo_para_firma`:
 - un soporte exigido **vencido** (`vigencia_hasta` anterior a la fecha de ejecución);
 - un soporte exigido **ausente** del repositorio.
 
-**No** lo bloquea un campo `faltante` del formulario: se reporta en el checklist y la analista
-decide. La firma es una decisión humana.
+**No** lo bloquea ningún campo del formulario, ni `faltante` ni `requiere_confirmacion`: se reportan
+y la analista decide. **El veredicto lo deciden solo los soportes.** Una descripción que mezcle campos
+con bloqueos es incorrecta: diría que el paquete no se puede firmar cuando sí se puede.
 
 ### RN4 · Nada se ejecuta sin confirmación explícita
 

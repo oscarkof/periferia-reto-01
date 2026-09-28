@@ -146,3 +146,37 @@ sysctl vm.swapusage        # "used" cerca de "total" = el modelo va a paginar
 ollama ps                  # modelos cargados y su tamaño en memoria
 ```
 
+---
+
+## 7. Dos correcciones que salieron de estas pruebas
+
+### 7.1 `needsConfirmation` era falso en el camino normal
+
+Se calculaba como `sesion.pendiente !== null`, y `pendiente` solo se llenaba cuando el modelo
+**intentaba** el envío sin autorización y la herramienta lo rechazaba. En el flujo normal —el modelo
+arma el paquete y pregunta en prosa— quedaba en `false`, así que el front no tenía señal para
+resaltar que faltaba un "sí".
+
+Ahora el ciclo registra el envío del último paquete armado como acción pendiente
+(`HERRAMIENTA_PAQUETE` en `src/agent/paso.ts`), derivado del **resultado de la herramienta** y no del
+texto del modelo. Efecto secundario deseado: el "sí" posterior queda atado a ese caso concreto, así
+que RN4 es más estricto (`pendiente.argumentos.caso` tiene que coincidir).
+
+Medido en la repetición del E2E (mismo modelo y caso, ya sin descarga en paralelo):
+
+| Turno | Tiempo | `needsConfirmation` | Efecto |
+|---|---|---|---|
+| 1 · procesar el caso | 70 s | **true** | el front ya sabe que falta confirmar; la sesión guarda `pendiente = simular_envio · ec-corp-andina` |
+| 2 · "envía" | 26 s | **false** | llamó a `proveedor_simular_envio`, dejó la constancia y limpió el pendiente |
+
+### 7.2 El modelo contaba un campo por confirmar como bloqueo
+
+Decía "no está listo para firma debido a **dos** factores: soporte ausente y campo RUC por
+confirmar". El bloqueo real es solo el soporte. La causa estaba en el conocimiento: la fila de
+`requiere_confirmacion` decía "una persona debe validarlo **antes de firmar**", que se lee como
+bloqueo. Se corrigió el conocimiento (RN3 ahora explicita que **ningún** campo bloquea) y el prompt.
+
+Verificado en la repetición: el mismo caso reporta el veredicto solo por el soporte ausente y dice
+del RUC *"el campo no está bloqueando la firma, pero debe validarse antes de firmar"*.
+
+

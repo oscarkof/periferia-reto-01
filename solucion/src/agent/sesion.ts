@@ -14,7 +14,15 @@ import type { Mensaje } from "../llm/adapter.ts"
 /** Identificador de sesión admitido (lo propone el cliente). */
 const ID_VALIDO = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 
-/** Acción que espera confirmación explícita del usuario (CA3 · RN4). */
+/**
+ * Acción que espera confirmación explícita del usuario (CA3 · RN4).
+ *
+ * Queda pendiente por dos caminos, y en los dos el valor lo pone el ciclo:
+ *   · el modelo intentó el envío sin autorización y la herramienta lo rechazó;
+ *   · el paquete quedó armado y simular el envío es el paso natural.
+ * El segundo caso es el que permite que `needsConfirmation` sea verdadero en el
+ * flujo normal, sin depender de que el modelo pregunte en prosa.
+ */
 export interface AccionPendiente {
   /** Nombre de la herramienta que quedó esperando. */
   herramienta: string
@@ -28,7 +36,7 @@ export interface AccionPendiente {
 export interface Sesion {
   id: string
   mensajes: Mensaje[]
-  /** Acción bloqueada a la espera de un "sí" del usuario. */
+  /** Acción gobernada esperando un "sí" del usuario; `null` si no hay ninguna. */
   pendiente: AccionPendiente | null
   /** Turnos completados. */
   turnos: number

@@ -111,3 +111,51 @@ test("RN4 · la confirmación solo autoriza el caso que quedó pendiente", async
   assert.equal(avisos.length, 1, "debe forzarse confirmado=false para otro caso")
   assert.ok(!fs.existsSync(entorno.out("pa-logistica-istmo", "ENVIO-SIMULADO.md")))
 })
+
+test("RN4 · armar el paquete deja el envío pendiente sin que el modelo lo intente", async () => {
+  const sesion = crearSesion("s-rn4-5")
+  const guionNormal: PasoMock[] = [
+    { llamadas: [{ nombre: "proveedor_armar_paquete", argumentos: { caso: CASO_PRUEBA } }] },
+    { texto: "El paquete está armado. ¿Confirmas el envío?" },
+  ]
+
+  const resultado = await turno(entorno, guionNormal, `procesa el caso ${CASO_PRUEBA}`, sesion)
+
+  assert.equal(resultado.needsConfirmation, true, "el turno debe cerrar pidiendo confirmación")
+  assert.ok(sesion.pendiente, "el envío queda pendiente aunque nadie lo haya intentado")
+  assert.equal(sesion.pendiente.herramienta, "proveedor_simular_envio")
+  assert.equal(sesion.pendiente.argumentos["caso"], CASO_PRUEBA, "el pendiente apunta al paquete armado")
+  assert.match(sesion.pendiente.descripcion, /simular el envío/)
+
+  const fin = eventosDe("fin", resultado.eventos)[0]
+  assert.ok(fin?.tipo === "fin")
+  assert.equal(fin.needsConfirmation, true, "el estado viaja en el evento de fin, que es lo que ve el front")
+})
+
+test("RN4 · el 'sí' del turno siguiente autoriza el envío del paquete recién armado", async () => {
+  const sesion = crearSesion("s-rn4-6")
+  const guionNormal: PasoMock[] = [
+    { llamadas: [{ nombre: "proveedor_armar_paquete", argumentos: { caso: CASO_PRUEBA } }] },
+    { texto: "El paquete está armado. ¿Confirmas el envío?" },
+  ]
+  await turno(entorno, guionNormal, `procesa el caso ${CASO_PRUEBA}`, sesion)
+
+  // Otras pruebas pudieron dejar la constancia: la borramos para poder afirmar que
+  // este turno la crea, sin depender del orden de ejecución.
+  const envio = entorno.out(CASO_PRUEBA, "ENVIO-SIMULADO.md")
+  fs.rmSync(envio, { force: true })
+
+  const guionConfirmado: PasoMock[] = [
+    { llamadas: [{ nombre: "proveedor_simular_envio", argumentos: { caso: CASO_PRUEBA, confirmado: false } }] },
+    { texto: "Envío simulado. Nada se envió de verdad." },
+  ]
+  const segundo = await turno(entorno, guionConfirmado, "sí, envía", sesion)
+
+  const avisos = eventosDe("aviso", segundo.eventos).filter(
+    (evento) => evento.tipo === "aviso" && evento.texto === AVISO_SIN_CONFIRMACION,
+  )
+  assert.equal(avisos.length, 0, "la confirmación era válida para ese caso: no debe haber aviso")
+  assert.equal(segundo.needsConfirmation, false, "ya no queda nada pendiente")
+  assert.equal(sesion.pendiente, null)
+  assert.ok(fs.existsSync(envio), "la confirmación debe autorizar el envío del caso pendiente")
+})

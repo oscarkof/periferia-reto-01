@@ -8,7 +8,10 @@
  *   · **CA2** el modelo no puede afirmar un valor: los valores salen de las
  *     herramientas (y el mapeo que devuelva se audita dentro de la herramienta);
  *   · **CA3 · RN4** confirmación humana: el valor de `confirmado` lo decide el
- *     ciclo a partir del mensaje del usuario, **no** el modelo;
+ *     ciclo a partir del mensaje del usuario, **no** el modelo. Además, armar el
+ *     paquete deja el envío simulado como acción pendiente, así que
+ *     `needsConfirmation` es un dato del ciclo y no del texto del modelo (y el
+ *     "sí" posterior tiene que ser para ese caso concreto);
  *   · **CA4** toda llamada a herramienta queda en el historial y en el log;
  *   · **CA5** un error del proveedor se cuenta en el chat y la sesión sigue viva.
  */
