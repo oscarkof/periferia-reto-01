@@ -424,7 +424,10 @@ async function consumirStream(mensaje, actual) {
 /** Un turno completo: pinta lo del usuario, consume el stream y refresca el estado. */
 async function enviar(mensaje) {
   const texto = typeof mensaje === "string" ? mensaje.trim() : ""
-  if (texto === "") return
+  if (texto === "") {
+    avisar("Escribe un mensaje antes de enviar.")
+    return
+  }
   if (estado.ocupado) {
     avisar("Todavía estoy con el turno anterior: espera a que termine.")
     return
@@ -468,8 +471,20 @@ function nuevaSesion() {
 
 /* ── Interacción ──────────────────────────────────────────────────────────── */
 
-/** Envía y garantiza que cualquier fallo se vea en pantalla. */
+/** Marca de tiempo del último envío, para no enviar dos veces el mismo clic. */
+let ultimoEnvio = 0
+
+/**
+ * Envía y garantiza que cualquier fallo se vea en pantalla.
+ * El `submit` del formulario y el clic del botón pueden dispararse los dos, así
+ * que la guarda temporal evita el doble envío.
+ */
 function enviarSeguro(texto) {
+  const ahora = Date.now()
+  if (ahora - ultimoEnvio < 500) return
+  ultimoEnvio = ahora
+
+  console.info("[front] enviando…")
   void enviar(texto).catch((error) => {
     const detalle = error instanceof Error ? error.message : String(error)
     avisar(`No pude completar el turno: ${detalle}`)
@@ -486,6 +501,14 @@ function alHacerClic(evento) {
   const destino = evento.target
   if (!(destino instanceof Element)) return
 
+  // El botón de enviar se atiende aquí además del `submit` del formulario: si el
+  // navegador no dispara el submit (una extensión, un formulario raro), el clic
+  // directo sigue funcionando.
+  if (destino.closest("#boton-enviar")) {
+    evento.preventDefault()
+    enviarSeguro(dom.entrada.value)
+    return
+  }
   if (destino.closest("#boton-confirmar")) {
     enviarSeguro("sí, confirmo")
     return
@@ -529,7 +552,7 @@ window.addEventListener("unhandledrejection", (evento) => {
 
 /* ── Arranque ─────────────────────────────────────────────────────────────── */
 
-console.info("[front] app.js cargado · v2")
+console.info("[front] app.js cargado · v3 · manejadores listos (submit y clics delegados)")
 
 pintarSugerencias()
 pintarSesion(0)

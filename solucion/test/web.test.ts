@@ -90,6 +90,19 @@ test("GET / sirve el chat, con su guion y sus estilos", async () => {
   assert.match(String(estilos.headers["content-type"]), /text\/css/)
 })
 
+test("el favicon que declara el HTML existe y se sirve", async () => {
+  const html = fs.readFileSync(path.join(WEB, "index.html"), "utf8")
+  const declarado = /<link rel="icon" href="\.\/([^"?]+)/.exec(html)
+  assert.ok(declarado, "el HTML debe declarar un favicon para no dejar un 404 en el log")
+
+  const nombre = declarado[1] ?? ""
+  assert.ok(fs.existsSync(path.join(WEB, nombre)), `no existe web/${nombre}`)
+
+  const app = await conFront()
+  const respuesta = await app.inject({ method: "GET", url: `/${nombre}` })
+  assert.equal(respuesta.statusCode, 200)
+})
+
 test("el front no expone nada fuera de su carpeta", async () => {
   const app = await conFront()
 
