@@ -168,7 +168,37 @@ ser `No está listo para firma` **solo** por el soporte ausente
 
 ---
 
-## 4 · Qué mirar si algo no cuadra
+## 4 · Ver qué está pasando en tiempo real
+
+Cuando algo "no hace nada", hacen falta estos cuatro sitios. El primero es nuevo: antes el
+servidor arrancaba sin registrar peticiones y por eso una interfaz muda no dejaba rastro.
+
+```bash
+# 1) La terminal donde corre `npm run dev`: cada petición, su resultado y su duración.
+#    Ejemplo real de un turno completo:
+#    [12:00:03] POST /api/chat · sesión prueba-sse · "Procesa el caso co-industrias-delta…"
+#    [12:00:20] POST /api/chat · sesión prueba-sse · stream cerrado en 17.2 s · 3 llamadas
+#    Si al pulsar Enviar no aparece ninguna línea aquí, el navegador no está enviando nada.
+
+# 2) Las herramientas, en vivo. Es el registro de RN5 (CA4):
+tail -f reto-01/solucion/out/log.jsonl             # los cuatro casos
+tail -f reto-01/solucion/out/ec-corp-andina/log.jsonl
+
+# 3) El estado de la sesión: historial, turnos y acción pendiente.
+curl -s http://127.0.0.1:3000/api/sessions/<session-id>
+
+# 4) La consola del navegador (F12 → Consola). Debe decir:
+#    [front] app.js cargado · v2
+#    Si no aparece, el navegador está usando una versión vieja en caché: recarga con Cmd+Shift+R.
+```
+
+En pantalla, la página lleva la marca **"interfaz v2"** en el pie: si la ves, estás probando el
+front actual. Y cualquier error de JavaScript se muestra ahora en el aviso rojo de la pantalla, no
+solo en la consola.
+
+---
+
+## 5 · Qué mirar si algo no cuadra
 
 | Síntoma | Causa y solución |
 |---|---|

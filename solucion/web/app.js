@@ -15,16 +15,12 @@ import { crearAcumulador, FIN } from "./sse.js"
 /** Referencias al documento, en un solo sitio. */
 const dom = {
   estado: document.querySelector("#estado-servidor"),
-  nuevaSesion: document.querySelector("#boton-nueva-sesion"),
   conversacion: document.querySelector("#conversacion"),
   pensando: document.querySelector("#pensando"),
   pensandoTexto: document.querySelector("#pensando-texto"),
   confirmacion: document.querySelector("#confirmacion"),
   confirmacionDetalle: document.querySelector("#confirmacion-detalle"),
-  confirmar: document.querySelector("#boton-confirmar"),
-  rechazar: document.querySelector("#boton-rechazar"),
   sugerencias: document.querySelector("#sugerencias"),
-  formulario: document.querySelector("#formulario"),
   entrada: document.querySelector("#entrada"),
   datoSesion: document.querySelector("#dato-sesion"),
   datoTurnos: document.querySelector("#dato-turnos"),
@@ -428,7 +424,11 @@ async function consumirStream(mensaje, actual) {
 /** Un turno completo: pinta lo del usuario, consume el stream y refresca el estado. */
 async function enviar(mensaje) {
   const texto = typeof mensaje === "string" ? mensaje.trim() : ""
-  if (texto === "" || estado.ocupado) return
+  if (texto === "") return
+  if (estado.ocupado) {
+    avisar("Todavía estoy con el turno anterior: espera a que termine.")
+    return
+  }
 
   estado.ocupado = true
   limpiarAviso()
@@ -466,26 +466,70 @@ function nuevaSesion() {
   dom.entrada.focus()
 }
 
-/* ── Arranque ─────────────────────────────────────────────────────────────── */
+/* ── Interacción ──────────────────────────────────────────────────────────── */
 
-dom.formulario.addEventListener("submit", (evento) => {
-  evento.preventDefault()
-  void enviar(dom.entrada.value)
-})
+/** Envía y garantiza que cualquier fallo se vea en pantalla. */
+function enviarSeguro(texto) {
+  void enviar(texto).catch((error) => {
+    const detalle = error instanceof Error ? error.message : String(error)
+    avisar(`No pude completar el turno: ${detalle}`)
+  })
+}
+
+/**
+ * Un solo manejador para toda la pantalla, en fase de captura.
+ * Va en `document` a propósito: si un `querySelector` fallara, los botones
+ * seguirían respondiendo. Antes, un fallo así dejaba la interfaz muda y
+ * parecía "pegada" sin decir nada.
+ */
+function alHacerClic(evento) {
+  const destino = evento.target
+  if (!(destino instanceof Element)) return
+
+  if (destino.closest("#boton-confirmar")) {
+    enviarSeguro("sí, confirmo")
+    return
+  }
+  if (destino.closest("#boton-rechazar")) {
+    enviarSeguro("no, espera")
+    return
+  }
+  if (destino.closest("#boton-nueva-sesion")) {
+    nuevaSesion()
+  }
+}
+
+document.addEventListener(
+  "submit",
+  (evento) => {
+    evento.preventDefault()
+    enviarSeguro(dom.entrada.value)
+  },
+  true,
+)
+
+document.addEventListener("click", alHacerClic, true)
 
 // Enter envía; Mayús+Enter deja el salto de línea, que es lo que espera un chat.
 dom.entrada.addEventListener("keydown", (evento) => {
   if (evento.key === "Enter" && !evento.shiftKey) {
     evento.preventDefault()
-    void enviar(dom.entrada.value)
+    enviarSeguro(dom.entrada.value)
   }
 })
 
-// La confirmación son dos respuestas que el usuario podría escribir a mano: el
-// botón solo las pone a un clic. El backend sigue siendo el que autoriza (RN4).
-dom.confirmar.addEventListener("click", () => void enviar("sí, confirmo"))
-dom.rechazar.addEventListener("click", () => void enviar("no, espera"))
-dom.nuevaSesion.addEventListener("click", nuevaSesion)
+// Cualquier error se muestra en pantalla, no solo en la consola.
+window.addEventListener("error", (evento) => {
+  avisar(`Error en la interfaz: ${evento.message}`)
+})
+window.addEventListener("unhandledrejection", (evento) => {
+  const motivo = evento.reason instanceof Error ? evento.reason.message : String(evento.reason)
+  avisar(`Error en la interfaz: ${motivo}`)
+})
+
+/* ── Arranque ─────────────────────────────────────────────────────────────── */
+
+console.info("[front] app.js cargado · v2")
 
 pintarSugerencias()
 pintarSesion(0)

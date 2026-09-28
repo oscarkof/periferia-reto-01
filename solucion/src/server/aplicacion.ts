@@ -50,6 +50,27 @@ export async function crearAplicacion(deps: Dependencias): Promise<FastifyInstan
     await app.register(fastifyStatic, { root: raizWeb, prefix: "/", wildcard: false })
   }
 
+  // Registro de peticiones: sin esto, cuando el front "no hace nada" no hay
+  // forma de saber desde la terminal si la petición llegó siquiera.
+  const comienzos = new WeakMap<object, number>()
+  app.addHook("onRequest", async (peticion) => {
+    comienzos.set(peticion, Date.now())
+  })
+  app.addHook("onResponse", async (peticion, respuesta) => {
+    const inicio = comienzos.get(peticion) ?? Date.now()
+    const segundos = ((Date.now() - inicio) / 1000).toFixed(1)
+    console.log(
+      `[${new Date().toTimeString().slice(0, 8)}] ${peticion.method} ${peticion.url} → ${respuesta.statusCode} (${segundos} s)`,
+    )
+  })
+  app.setErrorHandler((error: unknown, peticion, respuesta) => {
+    const detalle = error instanceof Error ? error.message : String(error)
+    const declarado = typeof error === "object" && error !== null && "statusCode" in error ? error.statusCode : undefined
+    const codigo = typeof declarado === "number" ? declarado : 500
+    console.error(`[${new Date().toTimeString().slice(0, 8)}] error en ${peticion.method} ${peticion.url}: ${detalle}`)
+    void respuesta.code(codigo).send({ ok: false, error: detalle })
+  })
+
   app.get("/api/health", async () => {
     const casos = listarCasos()
     const sesiones = listarSesiones(directorio)

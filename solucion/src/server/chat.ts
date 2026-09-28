@@ -46,6 +46,11 @@ function escribirEvento(canal: FastifyReply["raw"], evento: EventoTurno | { tipo
   canal.write(`data: ${JSON.stringify(evento)}\n\n`)
 }
 
+/** Hora local, para que el registro se pueda leer junto al resto de la terminal. */
+function hora(): string {
+  return new Date().toTimeString().slice(0, 8)
+}
+
 /** Registra `POST /api/chat`. */
 export function registrarChat(app: FastifyInstance, opciones: OpcionesChat): void {
   const { directorio, adaptador, prompt, conocimiento, memoria } = opciones
@@ -63,9 +68,23 @@ export function registrarChat(app: FastifyInstance, opciones: OpcionesChat): voi
     const eventos: EventoTurno[] = []
     const comunes = { directorio, sesion, mensajeUsuario: mensaje, adaptador, prompt, conocimiento }
 
+    // Registro en la terminal: sin esto no hay forma de saber si la petición
+    // llegó, cuánto tardó y si el front se quedó esperando.
+    const inicio = Date.now()
+    const segundos = (): string => `${((Date.now() - inicio) / 1000).toFixed(1)} s`
+    console.log(`[${hora()}] POST /api/chat · sesión ${id} · ${JSON.stringify(mensaje.slice(0, 80))}`)
+
     if (peticion.query.json === "1") {
       const resultado = await ejecutarTurno({ ...comunes, emitir: (evento) => eventos.push(evento) })
-      if (!resultado.ok) return reply.code(502).send({ ok: false, error: resultado.error, sessionId: id })
+      if (!resultado.ok) {
+        console.error(`[${hora()}] POST /api/chat · sesión ${id} · error en ${segundos()}: ${resultado.error}`)
+        return reply.code(502).send({ ok: false, error: resultado.error, sessionId: id })
+      }
+      console.log(
+        `[${hora()}] POST /api/chat · sesión ${id} · fin en ${segundos()} · ` +
+          `${eventos.filter((evento) => evento.tipo === "llamada").length} llamadas · ` +
+          `needsConfirmation=${resultado.data.needsConfirmation}`,
+      )
       return {
         ok: true,
         sessionId: id,
@@ -90,8 +109,16 @@ export function registrarChat(app: FastifyInstance, opciones: OpcionesChat): voi
       },
     })
 
-    if (!resultado.ok) escribirEvento(canal, { tipo: "error", texto: resultado.error })
+    if (!resultado.ok) {
+      console.error(`[${hora()}] POST /api/chat · sesión ${id} · error en ${segundos()}: ${resultado.error}`)
+      escribirEvento(canal, { tipo: "error", texto: resultado.error })
+    }
     canal.write("data: [DONE]\n\n")
     canal.end()
+
+    console.log(
+      `[${hora()}] POST /api/chat · sesión ${id} · stream cerrado en ${segundos()} · ` +
+        `${eventos.filter((evento) => evento.tipo === "llamada").length} llamadas`,
+    )
   })
 }

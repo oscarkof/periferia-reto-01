@@ -105,18 +105,25 @@ test("cada selector que usa app.js existe en index.html", () => {
   const html = fs.readFileSync(path.join(WEB, "index.html"), "utf8")
   const guion = fs.readFileSync(path.join(WEB, "app.js"), "utf8")
 
-  const ids = [...guion.matchAll(/querySelector\("#([a-zA-Z0-9_-]+)"\)/g)].map((coincidencia) => coincidencia[1] ?? "")
-  assert.ok(ids.length >= 10, `se esperaban varios selectores y se leyeron ${ids.length}`)
+  const selectores = [...guion.matchAll(/(?:querySelector|closest)\("#([a-zA-Z0-9_-]+)"\)/g)].map(
+    (coincidencia) => coincidencia[1] ?? "",
+  )
+  assert.ok(selectores.length >= 10, `se esperaban varios selectores y se leyeron ${selectores.length}`)
 
-  for (const id of ids) {
+  for (const id of selectores) {
     assert.ok(html.includes(`id="${id}"`), `la interfaz no tiene el elemento #${id} que usa app.js`)
   }
+
+  // El botón de enviar no lleva manejador propio (el `submit` del formulario lo
+  // cubre), así que su contrato es que siga siendo un botón de envío del form.
+  assert.match(html, /<form id="formulario"[\s\S]*?<button id="boton-enviar"[^>]*type="submit"/)
 })
 
 test("el HTML carga el guion y los estilos, y el guion importa el parser", () => {
   const html = fs.readFileSync(path.join(WEB, "index.html"), "utf8")
-  assert.match(html, /<script type="module" src="\.\/app\.js">/)
-  assert.match(html, /href="\.\/estilos\.css"/)
+  // El `?v=` es cache-busting: sin él, un navegador puede seguir usando el JS viejo.
+  assert.match(html, /<script type="module" src="\.\/app\.js\?v=\d+">/)
+  assert.match(html, /href="\.\/estilos\.css\?v=\d+"/)
 
   const guion = fs.readFileSync(path.join(WEB, "app.js"), "utf8")
   assert.match(guion, /from "\.\/sse\.js"/)
