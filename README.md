@@ -452,9 +452,22 @@ LLM_PROVIDER=openai OPENAI_API_KEY=... npm run dev
 
 ## 8. Link de prueba
 
-> **Pendiente de publicar.** Se completa con el túnel estable o el despliegue, y se deja activo mientras la
-> aplicación esté en evaluación. Mientras tanto, se levanta en local con el comando de §1 (el PRD §9.3
-> admite esa modalidad con −10).
+> **Decisión: se despliega en local durante la defensa.** El PRD §9.3 admite esa modalidad y asume el
+> **−10**; a cambio, la demo corre sobre la máquina, que es lo único que conserva el modelo local (Ollama) sin
+> publicar ninguna clave. Lo que sí está hecho y verificado es el despliegue: `docker compose up --build`
+> levanta front y API en un comando y el contenedor queda *healthy* (§1).
+
+**Cómo se prueba:** `cd reto-01 && docker compose up --build` y el chat en `http://127.0.0.1:3000`. Con
+`LLM_PROVIDER=mock` el turno responde en milisegundos, que es lo ideal para enseñar la pantalla completa; con
+Ollama real el front va mostrando cada herramienta mientras trabaja.
+
+**Vías, si algún día se decide publicar** (ninguna está activa):
+
+| Vía | Cómo | Qué se gana |
+|---|---|---|
+| **Túnel a esta máquina** (Cloudflare Tunnel o ngrok) | `docker compose up -d` y el túnel apuntando a `http://127.0.0.1:3000` | Es lo único que conserva el **modelo local** detrás del link |
+| **Render / Railway / Fly.io** | Desplegar la imagen del `Dockerfile` | URL permanente; a cambio hay que usar un proveedor por API o enseñar el `mock` |
+| **Azure** (Container Apps o App Service) | Igual, con la imagen en un *registry* | Es la nube que un cliente corporativo ya tiene contratada |
 
 **Clave de acceso:** no aplica; el link es público y no expone ninguna clave de modelo.
 

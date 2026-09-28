@@ -295,7 +295,9 @@ documentado como «no es un agente, es un guion», y el `/api/health` lo declara
 5. **El formato pedido viene declarado en la solicitud.** `solicitud.json` dice si es `xlsx`, `pdf` o
    `portal`, y los casos que no son Excel traen `plantilla-campos.json`. El agente no tiene que
    adivinar el formato desde el texto del correo.
-6. **Un usuario por sesión, sin autenticación.** El PRD permite un link público, así que no hay login;
+6. **Un usuario por sesión, sin autenticación.** El PRD permite un link público, así que no hay login; **la
+   entrega se despliega en local durante la defensa** (README §8, −10 asumido), que es lo que conserva el
+   modelo local.
    el aislamiento es por `sessionId` y el estado queda en `out/sessions/`.
 7. **El envío real está fuera de alcance** (PRD §2.3 y la pregunta abierta de §10): la firma
    electrónica y el envío al cliente no se implementan. El agente prepara y **simula**, dejando
